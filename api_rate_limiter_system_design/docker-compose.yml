@@ -1,0 +1,30 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      RATE_LIMIT_CAPACITY: 5
+      RATE_LIMIT_REFILL_RATE: 5
+      RATE_LIMIT_PERIOD_SECONDS: 60
+      RATE_LIMIT_KEY_PREFIX: rate_limit
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis_data:
